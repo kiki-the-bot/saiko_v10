@@ -60,7 +60,3 @@ graph TD
     style PROCESS_EARS fill:#f9f,stroke:#333,stroke-width:2px
     style PROCESS_BRAIN fill:#bbf,stroke:#333,stroke-width:2px
     style GPU fill:#ff9,stroke:#f00
-    %% STYLING
-    style PROCESS_EARS fill:#f9f,stroke:#333,stroke-width:2px
-    style PROCESS_BRAIN fill:#bbf,stroke:#333,stroke-width:2px
-    style GPU fill:#ff9,stroke:#f00
