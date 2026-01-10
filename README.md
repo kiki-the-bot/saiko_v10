@@ -1,62 +1,55 @@
-graph TD
-    %% HARDWARE LAYER
-    subgraph HARDWARE ["Consumer Hardware (RTX 3060)"]
+```mermaid
+---
+config:
+  layout: fixed
+  theme: neo
+  look: classic
+---
+flowchart TB
+ subgraph HARDWARE["<br>"]
         Mic["🎙️ Microphone"]
-        GPU["🔥 GPU (CUDA)"]
-        RAM["🧠 RAM (12GB VRAM)"]
-    end
-
-    %% PROCESS 1: EARS
-    subgraph PROCESS_EARS ["Process: The Ears (faster_ears.py)"]
-        direction TB
+        GPU["CUDA DEVICE (RTX 3060, 12GB VRAM)"]
+  end
+ subgraph PROCESS_EARS["Process: The Ears (faster_ears.py)"]
+    direction TB
         PyAudio["PyAudio Stream"]
         VAD{"Silero VAD"}
         Whisper["Distil-Whisper Large"]
-        
-        Mic --> PyAudio
-        PyAudio --> VAD
-        VAD -- "Voice Detected" --> Whisper
-        Whisper -- "GPU Compute" --> GPU
-    end
-
-    %% IPC BRIDGE
-    Queue(("IPC Queue"))
-    PROCESS_EARS -- "Text Packet" --> Queue
-
-    %% PROCESS 2: BRAIN
-    subgraph PROCESS_BRAIN ["Process: The Brain (brain.py)"]
-        direction TB
+  end
+ subgraph PROCESS_BRAIN["Process: The Brain (brain.py)"]
+    direction TB
         Bridge["BrainBridge Listener"]
-        
-        %% LAYERS
         Regex{"Regex Reflex Layer"}
         Router{"Semantic Router"}
         LLM["Mistral-Nemo LLM"]
-        
-        Queue --> Bridge
-        Bridge --> Regex
-        
-        %% LOGIC FLOW
-        Regex -- "Simple Query" --> Response_Fast["Cached Response"]
-        Regex -- "Complex Query" --> Router
-        
-        Router -- "Intent Check" --> RAM
-        Router -- "RAG/Context" --> LLM
-        
-        LLM -- "Inference" --> GPU
-        LLM --> Response_Slow["Generated Response"]
-    end
-
-    %% UI LAYER
-    subgraph PROCESS_UI ["Main Thread: GUI (main.py)"]
+        Queue(("IPC Queue"))
+        Response_Fast["Cached Response"]
+        Response_Slow["Generated Response"]
+  end
+ subgraph PROCESS_UI["Main Thread: GUI (main.py)"]
         DPG["DearPyGui Renderer"]
         Stream["Async Token Streamer"]
-    end
-
+  end
+    Mic --> PyAudio
+    PyAudio --> VAD
+    VAD -- Voice Detected --> Whisper
+    Whisper -- GPU Compute --> GPU
+    PROCESS_EARS -- Text Packet --> Queue
+    Queue --> Bridge
+    Bridge --> Regex
+    Regex -- Simple Query --> Response_Fast
+    Regex -- Complex Query --> Router
+    Router -- Intent Check --> GPU
+    Router -- RAG/Context --> LLM
+    LLM -- Inference --> GPU
+    LLM --> Response_Slow
     Response_Fast --> DPG
-    Response_Slow --> Stream --> DPG
-    
-    %% STYLING
-    style PROCESS_EARS fill:#f9f,stroke:#333,stroke-width:2px
-    style PROCESS_BRAIN fill:#bbf,stroke:#333,stroke-width:2px
+    Response_Slow --> Stream
+    Stream --> DPG
+
     style GPU fill:#ff9,stroke:#f00
+    style PROCESS_EARS fill:#f9f,stroke:#000000,stroke-width:2px
+    style PROCESS_BRAIN fill:#bbf,stroke:#000000,stroke-width:2px
+    style HARDWARE stroke:#000000,fill:#FFD600
+    style PROCESS_UI fill:#C8E6C9,stroke:#000000
+```
