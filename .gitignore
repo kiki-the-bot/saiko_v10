@@ -28,17 +28,19 @@ ENV/
 
 .env
 .env.local
-config.py  # Only if you kept the old one with secrets, otherwise remove this line
+config.py  
 
 .idea/
 .vscode/
 *.swp
 .DS_Store
-    
-# Block specific large model folders or extensions
+
+wannabe/
+
 models/
 *.bin
 *.pt
 *.pth
 *.gguf
 *.safetensors
+
