@@ -44,3 +44,6 @@ models/
 *.gguf
 *.safetensors
 
+scripts/
+
+server.py

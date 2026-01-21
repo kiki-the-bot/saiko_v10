@@ -1,12 +1,11 @@
+import json
 import torch
 import logging
+import os
 from sentence_transformers import SentenceTransformer, util
 
 # Import Config
 from config.settings import AgentConfig
-
-# Assumed Local Imports (Adjust path if you move knbase.py)
-from src.data.knowledge import POLICIES 
 
 logger = logging.getLogger("SaikoSystem")
 
@@ -14,36 +13,61 @@ class NeuroCortex:
     """
     Handles NLU using a Tiered Priority Cascade.
     Urgent > Passive > Intent.
+    Loads knowledge from external JSON config.
     """
     def __init__(self, config: AgentConfig):
         self.cfg = config
-        logger.info("🧠 Cortex: Loading Models & Computing Embeddings...")
+        logger.info("🧠 Cortex: Loading Neural Models...")
+        # Load the Heavy Model
         self.encoder = SentenceTransformer('all-MiniLM-L6-v2', device=self.cfg.DEVICE)
         
-        # TIER 1: URGENT (Control Flow)
-        self.urgent_triggers = {
-            "ESCALATE": ["human", "manager", "representative", "agent", "supervisor"],
-            "STOP": ["stop", "shut up", "cancel", "hold on", "wait", "silence"],
-            "CORRECTION": ["wrong number", "mistake", "go back", "not that one", "incorrect"]
-        }
-        self.urgent_embeds = self._batch_encode(self.urgent_triggers)
+        # Load the Knowledge (Intents & Policies)
+        self._load_knowledge_base()
 
-        # TIER 2: PASSIVE (Noise Filtering)
-        self.passive_phrases = ["uh huh", "yeah", "ok", "go on", "sure", "alright", "i understand"]
-        self.passive_embeds = self.encoder.encode(self.passive_phrases, convert_to_tensor=True)
-
-        # TIER 3: BUSINESS INTENTS (Logic)
-        self.business_intents = {
-            "REFUND": ["refund", "money back", "return", "wrong item", "damaged"],
-            "STATUS": ["where is my order", "tracking", "late", "shipping", "not received"],
-        }
-        self.business_embeds = self._batch_encode(self.business_intents)
+    def _load_knowledge_base(self):
+        """
+        Loads the rules from config/intents.json dynamically.
+        This prevents global scope crashes and allows hot-reloading if needed.
+        """
+        config_path = os.path.join(os.getcwd(), "config", "intents.json")
         
-        # Knowledge Base
-        self.policy_embeds = self.encoder.encode(POLICIES, convert_to_tensor=True)
+        try:
+            if not os.path.exists(config_path):
+                raise FileNotFoundError(f"Config not found at {config_path}")
+
+            with open(config_path, "r") as f:
+                data = json.load(f)
+            
+            logger.info("⚡ CORTEX: Vectorizing Rules into RAM...")
+            
+            # 1. Load Raw Text
+            self.urgent_triggers = data.get("URGENT", {})
+            self.passive_phrases = data.get("PASSIVE", [])
+            self.business_intents = data.get("BUSINESS", {})
+            self.policies = data.get("POLICIES", [])
+            self.call_flow = data.get("CALL_FLOW", {}) # <--- NEW: Call Flow strings
+            
+            # 2. Compute Embeddings (Vectorize)
+            self.urgent_embeds = self._batch_encode(self.urgent_triggers)
+            self.passive_embeds = self.encoder.encode(self.passive_phrases, convert_to_tensor=True)
+            self.business_embeds = self._batch_encode(self.business_intents)
+            self.policy_embeds = self.encoder.encode(self.policies, convert_to_tensor=True)
+            
+            logger.info("✅ CORTEX: Knowledge Graph Built.")
+            
+        except Exception as e:
+            logger.error(f"❌ CORTEX CRITICAL FAILURE: {e}")
+            # Fallback Safety Net (So the app doesn't crash)
+            self.urgent_triggers = {"STOP": ["stop"]}
+            self.urgent_embeds = self._batch_encode(self.urgent_triggers)
+            self.call_flow = {}
 
     def _batch_encode(self, phrase_dict):
         return {k: self.encoder.encode(v, convert_to_tensor=True) for k,v in phrase_dict.items()}
+
+    def get_directive(self, state: str) -> str:
+        """Returns the specific prompt instruction for the current state."""
+        return self.call_flow.get(state, "Follow standard procedure.")
 
     def analyze_input(self, text: str) -> dict:
         """
@@ -78,6 +102,7 @@ class NeuroCortex:
     def retrieve_policy(self, text: str) -> str:
         user_emb = self.encoder.encode(text, convert_to_tensor=True)
         scores = util.cos_sim(user_emb, self.policy_embeds)[0]
-        if torch.max(scores).item() > 0.4:
-            return POLICIES[torch.argmax(scores).item()]
+        # Adjusted threshold to be safer
+        if torch.max(scores).item() > 0.55: 
+            return self.policies[torch.argmax(scores).item()]
         return "Standard Procedure."

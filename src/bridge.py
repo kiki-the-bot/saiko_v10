@@ -13,7 +13,7 @@ from src.core.controller import SaikoController, CallSession
 
 # External Dependencies (Assumed in root)
 from src.core.engine import SaikoEngine
-#from src.audio.mouth import Mouth
+from src.audio.mouth import Mouth
 
 logger = logging.getLogger("SaikoSystem")
 

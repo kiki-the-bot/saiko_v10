@@ -9,7 +9,6 @@ from textwrap import dedent
 # Adjust these imports if you moved ammo/mock_database!
 from src.data.ammo import ChatMsg, ContextData
 from src.data.database import OmniCorpDB
-from src.data.knowledge import DOER_DIRECTIVES
 
 # Import our new separated cores
 from src.core.cortex import NeuroCortex
@@ -168,7 +167,7 @@ class SaikoController:
         
         # Build Prompt
         full_log = "\n".join([f"{m.role}: {m.content}" for m in session.history[-10:]])
-        directives = DOER_DIRECTIVES.get(session.state, "Standard Procedure")
+        directives = self.cortex.get_directive(session.state)
         
         prompt = dedent(f"""
         [INST] You are Saiko, a Home Depot Agent. State: {session.state}. 
