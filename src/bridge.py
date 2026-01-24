@@ -2,16 +2,18 @@ import queue
 import threading
 import asyncio
 import logging
+import os 
+import sys
 
-# Config
-from config.settings import AgentConfig
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.append(parent_dir)
 
-# Components
+from config.setting import AgentConfig
+
 from src.core.cortex import NeuroCortex
 from src.core.parser import ChaosParser
 from src.core.controller import SaikoController, CallSession
-
-# External Dependencies (Assumed in root)
 from src.core.engine import SaikoEngine
 from src.audio.mouth import Mouth
 
@@ -22,20 +24,15 @@ class BrainBridge:
         self.output_queue = queue.Queue()
         self.input_queue = queue.Queue()
         self.cfg = AgentConfig()
-        
-        # Init Components
         self.cortex = NeuroCortex(self.cfg)
         self.llm = SaikoEngine(self.cfg, self.cfg.MODEL_PATH)
         self.parser = ChaosParser()
         self.controller = SaikoController(self.cortex, self.llm, self.parser)
-        
-        # Init Session
         self.current_session = CallSession()
-        
-        #self.mouth = Mouth()
+        self.mouth = Mouth()
         self.running = True
         threading.Thread(target=self._run_loop, daemon=True).start()
-        logger.info("✅ Bridge Online.")
+        logger.info("Bridge Online.")
 
     def reset_call(self):
         if self.current_session:
@@ -48,7 +45,7 @@ class BrainBridge:
         self.input_queue.put(msg_object)
 
     def trigger_interrupt(self):
-        logger.warning("🛑 INTERRUPT TRIGGERED")
+        logger.warning("INTERRUPT TRIGGERED")
         self.current_session.abort_signal = True
 
     def _run_loop(self):
@@ -58,7 +55,6 @@ class BrainBridge:
         async def queue_watcher():
             while self.running:
                 try:
-                    # Run blocking queue.get in executor
                     msg = await loop.run_in_executor(None, self.input_queue.get)
                     if msg is None: break
 

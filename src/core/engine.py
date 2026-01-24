@@ -1,7 +1,7 @@
 import sys
 import os
 # Import the config
-from config.settings import AgentConfig
+from config.setting import AgentConfig
 from exllamav2 import (
     ExLlamaV2, ExLlamaV2Config, ExLlamaV2Cache_Q4, 
     ExLlamaV2Tokenizer
@@ -10,27 +10,23 @@ from exllamav2.generator import ExLlamaV2StreamingGenerator, ExLlamaV2Sampler
 
 class SaikoEngine:
       def __init__(self, config: AgentConfig, model_path: str):
-          print(f"🏎️ INITIALIZING EXLLAMAV2 ENGINE FROM: {model_path}")
+          print(f"INITIALIZING EXLLAMAV2 ENGINE FROM: {model_path}")
 
           self.cfg = config
           
-          # 1. Configure
           self.llm_config = ExLlamaV2Config()
           self.llm_config.model_dir = model_path
           self.llm_config.prepare()
           self.llm_config.max_seq_len = 4096
         
-          # 2. Load Model
           self.model = ExLlamaV2(self.llm_config)
           self.cache = ExLlamaV2Cache_Q4(self.model, lazy=True)
-          print("🟢 LOADING WEIGHTS TO GPU...")
+          print("LOADING WEIGHTS TO GPU...")
           self.model.load_autosplit(self.cache)
         
-          # 3. Tokenizer & Generator
           self.tokenizer = ExLlamaV2Tokenizer(self.llm_config)
           self.generator = ExLlamaV2StreamingGenerator(self.model, self.cache, self.tokenizer)
         
-          # 4. Settings (Read from Config!) 🧠
           self.settings = ExLlamaV2Sampler.Settings()
           self.settings.temperature = self.cfg.TEMPERATURE
           self.settings.top_k = self.cfg.TOP_K
@@ -41,6 +37,12 @@ class SaikoEngine:
       def stream_generate(self, prompt, max_new_tokens=250):
         if not prompt.startswith("<s>"):
             prompt = "<s>" + prompt
+
+        # 👇 ADD THIS BLOCK 👇
+        print("\n" + "="*60)
+        print("🔥 ENGINE PROMPT DUMP (FINAL STATE) 🔥")
+        print(prompt)
+        print("="*60 + "\n")
 
         input_ids = self.tokenizer.encode(prompt, encode_special_tokens=True)
         self.generator.warmup()

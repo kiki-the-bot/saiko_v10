@@ -8,18 +8,15 @@ import csv
 from collections import deque
 from typing import Optional, List
 from datetime import datetime 
-
-# --- IMPORTS (Keep your existing path structure) ---
-from src.data.ammo import ChatMsg
-from src.bridge import BrainBridge
-from src.audio.faster_ears import SaikoEars
+from data.ammo import ChatMsg
+from bridge import BrainBridge
+from audio.faster_ears import SaikoEars
 
 # --- CONFIG ---
 WINDOW_WIDTH = 550
 WINDOW_HEIGHT = 900
 METRICS_FILE = "saiko_metrics.csv"
 
-# --- DLL FIX (Keep this global, it's system-level patching) ---
 def _load_system_dlls():
     try:
         libs_path = os.path.join(os.getcwd(), "libs") 
@@ -29,12 +26,9 @@ def _load_system_dlls():
     except: pass
 
 class SaikoHUD:
-    """
-    The Main GUI Class.
-    Encapsulates all state: No more global variables floating around like loose weights.
-    """
+
     def __init__(self):
-        # 1. State Initialization (The "Core")
+        # 1. State Initialization 
         self.bridge: Optional[BrainBridge] = None
         self.ears: Optional[SaikoEars] = None
         self.listening: bool = False
@@ -51,7 +45,6 @@ class SaikoHUD:
         dpg.setup_dearpygui()
 
     def _setup_ui(self):
-        """Define the entire layout here. Tidy room, tidy mind."""
         with dpg.window(tag="Primary Window"):
             
             # Header
@@ -91,7 +84,6 @@ class SaikoHUD:
             dpg.add_input_text(tag="manual_input", label="Manual Input (Enter)", on_enter=True, callback=self.handle_manual_input)
 
     def start_systems(self):
-        """Spin up the heavy lifting threads."""
         _load_system_dlls()
         
         dpg.set_value("status_text", "🧠 LOADING BRAIN...")
@@ -105,7 +97,6 @@ class SaikoHUD:
         )
         self.ears.start_listening()
         
-        # Hotkeys (Binding methods to keys)
         keyboard.add_hotkey("f9", self.toggle_ears)
         keyboard.add_hotkey("f12", self.next_call)
         
@@ -115,7 +106,6 @@ class SaikoHUD:
     # --- LOGIC HANDLERS ---
 
     def _update_status_display(self, text, text_color, dot_color):
-        """Helper to update status UI without repeating code"""
         dpg.set_value("status_text", text)
         dpg.configure_item("status_text", color=text_color)
         dpg.configure_item("status_indicator", color=dot_color)
@@ -152,7 +142,6 @@ class SaikoHUD:
         self._update_status_display("✨ SYSTEM READY", (0, 255, 0), (0, 255, 0))
 
     def kill_switch(self):
-        """Triggered by 'STOP' or 'SHUT UP'"""
         if not "[INTERRUPT]" in self.current_response_buffer:
             self.current_response_buffer += " [INTERRUPT]"
             dpg.set_value("active_saiko_msg", self.current_response_buffer)
@@ -163,13 +152,11 @@ class SaikoHUD:
         self._update_status_display("⛔ INTERRUPTED", (255, 0, 0), (255, 0, 0))
 
     def update_volume(self, level):
-        """Callback for the VU meter"""
         dpg.set_value("vu_meter", level)
 
     def on_hear_user(self, text, lang="en"):
         if not text or len(text.strip()) < 2: return
         
-        # Highlander Logic (Reuse Tag)
         if dpg.does_item_exist("active_saiko_msg"):
             dpg.remove_alias("active_saiko_msg")
 
@@ -183,7 +170,6 @@ class SaikoHUD:
         
         self._update_status_display("⚡ THINKING...", (255, 255, 0), (0, 255, 0))
         
-        # Send to Brain
         msg = ChatMsg(role="USER", content=text)
         self.history.append(msg)
         if self.bridge:
@@ -196,7 +182,6 @@ class SaikoHUD:
             self.on_hear_user(text)
 
     def log_interaction(self, user, saiko, scenario, conf, lat):
-        """Logs metrics to CSV"""
         if not os.path.isfile(METRICS_FILE):
             with open(METRICS_FILE, 'w', newline='', encoding='utf-8') as f:
                 csv.writer(f).writerow(["Time", "Lat", "Scenario", "Conf", "USER", "SAIKO"])
@@ -212,7 +197,6 @@ class SaikoHUD:
         dpg.show_viewport()
         dpg.set_primary_window("Primary Window", True)
         
-        # Start Systems in Background
         threading.Thread(target=self.start_systems, daemon=True).start()
         
         while dpg.is_dearpygui_running():
@@ -222,7 +206,6 @@ class SaikoHUD:
         dpg.destroy_context()
 
     def _update_frame(self):
-        """Polls the bridge for new tokens"""
         if not self.bridge: return
         
         updates = self.bridge.get_updates()
@@ -236,7 +219,6 @@ class SaikoHUD:
                 result = payload
                 status = result.get("status", "")
                 
-                # Handling status codes
                 if status == "HUNTING":
                     dpg.set_value("status_text", "🦅 HUNTING...")
                     dpg.configure_item("status_text", color=(255, 140, 0))

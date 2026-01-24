@@ -31,16 +31,23 @@ class ContextData:
      order_id: Optional[str] = None
      cx_name: Optional[str] = None 
      sentiment: str = "NEUTRAL"
+     order_details : Optional[str] = None
+     is_verified : bool = False
 
      def to_prompt_block(self) -> str:
-          lines = []
+          lines = ["context data:"]
+          if self.is_verified:
+               lines.append(f" - USER VERIFIED: {self.is_verified}")
           if self.order_id:
                lines.append(f"- ACTIVE ORDER ID: {self.order_id}")
           if self.intent:
                lines.append(f"- INTENT DETECTED: {self.intent}")
           if self.cx_name:
                lines.append(f"- NAME MEMORIZED: {self.cx_name}")
-
+          if self.order_details:
+               lines.append(f" - ORDER DETAILS: {self.order_details}")
+               lines.append(" - INSTRUCTION: Tell the user exactly what is in the database result.")
+     
           if not lines:
                return ""
           

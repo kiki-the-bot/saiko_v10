@@ -53,17 +53,15 @@ def _seed_data(conn):
     
     # Generate 10,000 simulations
     for i in range(10000):
-        # Random ID
+
         oid = f"AB-{random.randint(10000000, 99999999)}"
         
-        # FORCE A KNOWN ID FOR DEMOS (So you don't look stupid live)
         if i == 0: oid = "WH-12345678"
             
         item = random.choice(items)
         status = random.choice(statuses)
         loc = random.choice(locations)
         
-        # Date Logic
         if status == "DELIVERED":
             eta = "N/A"
         else:
@@ -72,7 +70,6 @@ def _seed_data(conn):
             
         data.append((oid, f"Customer_{i}", item, status, loc, eta))
         
-    # Bulk Insert (The Flex)
     cursor.executemany('INSERT OR IGNORE INTO orders VALUES (?, ?, ?, ?, ?, ?, NULL)', data)
     print("✅ SEEDING COMPLETE.")
 
