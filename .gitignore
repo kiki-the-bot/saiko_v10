@@ -55,4 +55,11 @@ server.py
 
 client.py
 
-static/
+static/index.html
+static/ 
+
+omni_upgrade.py
+
+omnicorp.db
+
+omni_upgrade.py
