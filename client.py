@@ -5,7 +5,7 @@ import colorama
 from colorama import Fore, Style
 from datetime import datetime
 
-# ✅ USE YOUR EXISTING MODULES
+# USE EXISTING MODULES
 from src.audio.faster_ears import SaikoEars
 from src.audio.mouth import Mouth
 

@@ -1,6 +1,5 @@
 import sys
 import os
-# Import the config
 from config.setting import AgentConfig
 from exllamav2 import (
     ExLlamaV2, ExLlamaV2Config, ExLlamaV2Cache_Q4, 
